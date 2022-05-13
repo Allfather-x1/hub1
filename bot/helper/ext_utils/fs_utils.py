@@ -194,5 +194,37 @@ def split(path, size, filee, dirpath, split_size, start_time=0, i=1, inLoop=Fals
     else:
         out_path = os.path.join(dirpath, filee + "_")
         subprocess.run(["split", "--numeric-suffixes=1", "--suffix-length=3", f"--bytes={split_size}", path, out_path])
+def get_media_info(path):
+    try:
+        result = subprocess.check_output(["ffprobe", "-hide_banner", "-loglevel", "error", "-print_format",
+                                          "json", "-show_format", path]).decode('utf-8')
+        fields = json.loads(result)['format']
+    except Exception as e:
+        LOGGER.error(f"get_media_info: {e}")
+        return 0, None, None
+    try:
+        duration = round(float(fields['duration']))
+    except:
+        duration = 0
+    try:
+        artist = str(fields['tags']['artist'])
+    except:
+        artist = None
+    try:
+        title = str(fields['tags']['title'])
+    except:
+        title = None
+    return duration, artist, title
 
+def get_video_resolution(path):
+    try:
+        result = subprocess.check_output(["ffprobe", "-hide_banner", "-loglevel", "error", "-select_streams", "v:0",
+                                          "-show_entries", "stream=width,height", "-of", "json", path]).decode('utf-8')
+        fields = json.loads(result)['streams'][0]
 
+        width = int(fields['width'])
+        height = int(fields['height'])
+        return width, height
+    except Exception as e:
+        LOGGER.error(f"get_video_resolution: {e}")
+        return 480, 320
